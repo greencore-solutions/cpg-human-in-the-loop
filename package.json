@@ -1,0 +1,16 @@
+{
+  "name": "cpg-human-in-the-loop-mcp",
+  "version": "1.0.0",
+  "description": "HITL transaction MCP — mcp.cpghumanintheloop.ai. Machines lodge; humans decide. GreenCore Solutions Corp.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "express": "^4.21.0",
+    "pg": "^8.13.0",
+    "zod": "^3.24.0"
+  },
+  "license": "UNLICENSED"
+}
