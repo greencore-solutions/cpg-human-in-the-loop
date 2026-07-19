@@ -1,0 +1,18 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.greencore-solutions/cpg-human-in-the-loop",
+  "title": "MCP CPG Human in the Loop (HITL)",
+  "description": "Navigator for BPC Agentic Procurement",
+  "version": "1.0.0",
+  "websiteUrl": "https://cpghumanintheloop.ai",
+  "repository": {
+    "url": "https://github.com/greencore-solutions/cpg-human-in-the-loop",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.cpghumanintheloop.ai/mcp"
+    }
+  ]
+}
