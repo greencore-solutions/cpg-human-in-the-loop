@@ -19,7 +19,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 
-const VERSION = "1.0.0";
+const VERSION = "1.0.2";
 const NODE = "mcp.cpghumanintheloop.ai";
 
 // ---------- Postgres ----------
@@ -31,27 +31,51 @@ const pool = new pg.Pool({
 
 // ---------- Ghost Headers Canon v3.2 — "The Ghost Eighteen" ----------
 // Canon order verbatim. Timestamp + nonce concrete per request.
-function ghostEighteen(res, signal = "ACM-200", state = "ALLOW") {
-  res.set({
-    "x-gsc-protocol": "ACM-68000",
-    "x-gsc-classification": "ACM-SPARKS",
+const GHOST_V4 = {
+ "mcp.cpghumanintheloop.ai": {
+  "region": "France Central",
+  "jurisdiction": "apex",
+  "mcp": "https://mcp.cpghumanintheloop.ai/mcp",
+  "product": "https://gsc-navigator.ai/",
+  "git": "io.github.greencore-solutions/cpg-human-in-the-loop",
+  "x402": false
+ }
+};
+const GHOST_V4_PRIMARY = "mcp.cpghumanintheloop.ai";
+function ghostV4Set(res, signal, state) {
+  const hn = ((res.req && (res.req.hostname || res.req.headers.host)) || GHOST_V4_PRIMARY).toLowerCase().split(":")[0];
+  const v = GHOST_V4[hn] || GHOST_V4[GHOST_V4_PRIMARY];
+  const self = GHOST_V4[hn] ? hn : GHOST_V4_PRIMARY;
+  const sig = String(signal || "ACM-200").replace(/^CPG-/, "ACM-");
+  const h = {
+    "x-gsc-protocol": "CPG-68000",
+    "x-gsc-version": "4.0",
+    "x-gsc-handshake": "https://gsc-registry.ai/resolve/" + self,
+    "x-gsc-card": "https://" + self + "/.well-known/agent-card.json",
+    "x-gsc-trust-anchor": "https://dpuone.ai/.well-known/jwks.json",
     "x-gsc-operator": "GreenCore Solutions Corp.",
-    "x-gsc-microsoft-partner": "AI-Cloud-Partner-Program-Member",
     "x-gsc-duns": "24-336-6774",
+    "x-gsc-microsoft-partner": "AI-Cloud-Partner-Program-Member",
+    "x-gsc-node": self,
+    "x-gsc-region": v.region,
+    "x-gsc-jurisdiction": v.jurisdiction,
+    "x-gsc-signal": sig,
+    "x-gsc-state": state || "ALLOW",
+    "x-gsc-graph": "https://mcp.cpgknowledgegraph.ai/mcp",
+    "x-gsc-mcp": v.mcp,
     "x-gsc-inbound": "https://x-gsi.ai/ingest",
-    "x-gsc-trust-anchor": "dpuone.ai",
-    "x-gsc-registry": "io.github.greencore-solutions/cpg-knowledge-graph",
-    "x-gsc-mcp-server": "mcp.cpgknowledgegraph.ai",
-    "x-gsc-agent-access": "MCP+A2A",
-    "x-gsc-timestamp": new Date().toISOString(),
-    "x-gsc-nonce": crypto.randomUUID(),
-    "x-gsc-signal": signal,
-    "x-gsc-state": state,
-    "x-gsc-node": NODE,
-    "x-gsc-jurisdiction": "FR",
-    "x-gsc-product": "AI-Agents-for-CPG+CPG-Knowledge-Graph",
-    "x-gsc-fleet": "https://gsc-cpg.ai,https://gsc-a2a.ai,https://gsc-a2a.io",
-  });
+    "x-gsc-product": v.product,
+    "x-gsc-fleet": "https://gsc-cpg.ai,https://gsc-a2a.ai,https://gsc-a2a.io,https://gsc-fleet.ai",
+  };
+  if (v.git) h["x-gsc-git"] = v.git;
+  if (v.x402) h["x-gsc-x402"] = "ready";
+  h["x-gsc-timestamp"] = new Date().toISOString();
+  h["x-gsc-nonce"] = crypto.randomUUID();
+  res.set(h);
+}
+
+function ghostEighteen(res, signal = "ACM-200", state = "ALLOW") {
+  ghostV4Set(res, signal, state);
 }
 
 // ---------- ticket helpers ----------
@@ -72,7 +96,7 @@ async function insertTicket({ type, subject, body, gtin, market, quantity, reque
        (ticket_id, ticket_type, subject, body, gtin, market, quantity, requester, related_ticket, acm_signal)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
     [ticketId, type, subject, body, gtin ?? null, market ?? null, quantity ?? null,
-     JSON.stringify(requester ?? {}), related ?? null, signal]
+     JSON.stringify(requester ?? {}), related ?? null, String(signal).replace(/^CPG-/, "ACM-")]
   );
   return ticketId;
 }
@@ -157,7 +181,7 @@ function buildMcp() {
         type: t.ticket_type,
         status: t.status,
         subject: t.subject,
-        signal: t.acm_signal,
+        signal: String(t.acm_signal ?? ""),
         answer: t.answer ?? null,
         answered_at: t.answered_at ?? null,
         created_at: t.created_at,
@@ -315,7 +339,7 @@ app.get("/", (req, res) => {
       gsc_em: "https://gsc-em.com",
       x_gsc: "https://x.com/GSC_Rail_ai",
       gsc_agentic_au: "https://gsc-agentic.ai",
-      x_gsc_agentic: "https://x.com/gsc_agentic_ai",
+      x_gsc_agentic: "https://x.com/gsc_global_ai",
     },
     microsoft_partner: "Microsoft AI Cloud Partner",
     endpoint: `https://${NODE}`,
@@ -327,7 +351,7 @@ app.get("/", (req, res) => {
     governance: "https://standard-10060.org",
     trust_anchor: "https://dpuone.ai",
     duns: "24-336-6774",
-    registry: "io.github.greencore-solutions/cpg-human-in-the-loop",
+    registry: "io.github.gsc-em/aio-agents-mcp",
     role: "hitl-transaction-mcp",
     human_in_the_loop: {
       surface: "GSC Navigator",

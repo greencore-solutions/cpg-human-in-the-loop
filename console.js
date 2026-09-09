@@ -30,11 +30,11 @@ async function main() {
         `SELECT ticket_id, ticket_type, status, acm_signal, subject, created_at
            FROM hitl.tickets
           WHERE status IN ('OPEN','IN_REVIEW')
-          ORDER BY (acm_signal = 'ACM-451') DESC, created_at ASC`
+          ORDER BY (acm_signal = 'CPG-451') DESC, created_at ASC`
       );
       if (rows.length === 0) { console.log("Queue empty."); break; }
       rows.forEach((t) => console.log(row(t)));
-      console.log(`\n${rows.length} ticket(s). ACM-451 escalations sort first.`);
+      console.log(`\n${rows.length} ticket(s). CPG-451 escalations sort first.`);
       break;
     }
     case "show": {
